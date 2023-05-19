@@ -1,17 +1,21 @@
 library flutter_echarts;
 
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/foundation.dart';
-
+import 'package:url_launcher/url_launcher_string.dart';
 import 'package:webview_flutter/webview_flutter.dart';
+import 'package:webview_flutter_android/webview_flutter_android.dart';
+import 'package:webview_flutter_wkwebview/webview_flutter_wkwebview.dart';
 
 import 'echarts_script.dart' show echartsScript;
 
-/// <!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, target-densitydpi=device-dpi" /><style type="text/css">body,html,#chart{height: 100%;width: 100%;margin: 0px;}div {-webkit-tap-highlight-color:rgba(255,255,255,0);}</style></head><body><div id="chart" /></body></html>
+const String html =
+    """<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=0, target-densitydpi=device-dpi" /><style type="text/css">body,html,#chart{height: 100%;width: 100%;margin: 0px;}div {-webkit-tap-highlight-color:rgba(255,255,255,0);}</style></head><body><div id="chart" /></body></html>""";
+
 /// 'data:text/html;base64,' + base64Encode(const Utf8Encoder().convert( /* STRING ABOVE */ ))
-const htmlBase64 =
-    'data:text/html;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+PG1ldGEgY2hhcnNldD0idXRmLTgiPjxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsIGluaXRpYWwtc2NhbGU9MS4wLCBtYXhpbXVtLXNjYWxlPTEuMCwgbWluaW11bS1zY2FsZT0xLjAsIHVzZXItc2NhbGFibGU9MCwgdGFyZ2V0LWRlbnNpdHlkcGk9ZGV2aWNlLWRwaSIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPmJvZHksaHRtbCwjY2hhcnR7aGVpZ2h0OiAxMDAlO3dpZHRoOiAxMDAlO21hcmdpbjogMHB4O31kaXYgey13ZWJraXQtdGFwLWhpZ2hsaWdodC1jb2xvcjpyZ2JhKDI1NSwyNTUsMjU1LDApO308L3N0eWxlPjwvaGVhZD48Ym9keT48ZGl2IGlkPSJjaGFydCIgLz48L2JvZHk+PC9odG1sPg==';
+// const htmlBase64 =
+//     'data:text/html;base64,PCFET0NUWVBFIGh0bWw+PGh0bWw+PGhlYWQ+PG1ldGEgY2hhcnNldD0idXRmLTgiPjxtZXRhIG5hbWU9InZpZXdwb3J0IiBjb250ZW50PSJ3aWR0aD1kZXZpY2Utd2lkdGgsIGluaXRpYWwtc2NhbGU9MS4wLCBtYXhpbXVtLXNjYWxlPTEuMCwgbWluaW11bS1zY2FsZT0xLjAsIHVzZXItc2NhbGFibGU9MCwgdGFyZ2V0LWRlbnNpdHlkcGk9ZGV2aWNlLWRwaSIgLz48c3R5bGUgdHlwZT0idGV4dC9jc3MiPmJvZHksaHRtbCwjY2hhcnR7aGVpZ2h0OiAxMDAlO3dpZHRoOiAxMDAlO21hcmdpbjogMHB4O31kaXYgey13ZWJraXQtdGFwLWhpZ2hsaWdodC1jb2xvcjpyZ2JhKDI1NSwyNTUsMjU1LDApO308L3N0eWxlPjwvaGVhZD48Ym9keT48ZGl2IGlkPSJjaGFydCIgLz48L2JvZHk+PC9odG1sPg==';
 
 class Echarts extends StatefulWidget {
   Echarts(
@@ -26,6 +30,7 @@ class Echarts extends StatefulWidget {
       this.captureVerticalGestures = false,
       this.onLoad,
       this.onWebResourceError,
+      this.progressHandler,
       this.reloadAfterInit = false})
       : super(key: key);
 
@@ -49,6 +54,8 @@ class Echarts extends StatefulWidget {
 
   final void Function(WebViewController, Exception)? onWebResourceError;
 
+  final void Function(int? progress)? progressHandler;
+
   final bool reloadAfterInit;
 
   @override
@@ -56,7 +63,7 @@ class Echarts extends StatefulWidget {
 }
 
 class _EchartsState extends State<Echarts> {
-  WebViewController? _controller;
+  late final WebViewController _controller;
 
   String? _currentOption;
 
@@ -65,23 +72,81 @@ class _EchartsState extends State<Echarts> {
     super.initState();
     _currentOption = widget.option;
 
-    if (widget.reloadAfterInit) {
-      new Future.delayed(const Duration(milliseconds: 100), () {
-        _controller?.reload();
-      });
+    PlatformWebViewControllerCreationParams params;
+    if (WebViewPlatform.instance is WebKitWebViewPlatform) {
+      params = WebKitWebViewControllerCreationParams(
+        allowsInlineMediaPlayback: true,
+        mediaTypesRequiringUserAction: const <PlaybackMediaTypes>{},
+      );
+    } else if (WebViewPlatform.instance is AndroidWebViewPlatform) {
+      params = AndroidWebViewControllerCreationParams();
+    } else {
+      params = const PlatformWebViewControllerCreationParams();
     }
+    _controller = WebViewController.fromPlatformCreationParams(params)
+      ..enableZoom(false)
+      ..setJavaScriptMode(JavaScriptMode.unrestricted)
+      ..setBackgroundColor(Colors.transparent)
+      ..addJavaScriptChannel(
+        'Messager',
+        onMessageReceived: (JavaScriptMessage javascriptMessage) {
+          if (widget.onMessage != null) {
+            widget.onMessage!(javascriptMessage.message);
+          }
+        },
+      )
+      ..setNavigationDelegate(
+        NavigationDelegate(
+          onProgress: (int progress) {
+            if (widget.progressHandler != null) {
+              widget.progressHandler!(progress);
+            }
+          },
+          onWebResourceError: (error) {
+            if (widget.onWebResourceError != null) {
+              widget.onWebResourceError!(_controller, Exception(error));
+            }
+          },
+          onPageStarted: (url) {
+            debugPrint('page start url: $url');
+          },
+          onPageFinished: (String url) {
+            debugPrint('page finished url: $url');
+            init();
+          },
+          onNavigationRequest: (NavigationRequest request) async {
+            if (await canLaunchUrlString(request.url)) {
+              try {
+                launchUrlString(request.url);
+              } catch (e) {
+                debugPrint('Flutter Charts Error ->$e');
+              }
+              return NavigationDecision.prevent;
+            }
+            return NavigationDecision.navigate;
+          },
+        ),
+      );
+    if (_controller.platform is AndroidWebViewController) {
+      AndroidWebViewController.enableDebugging(kDebugMode);
+      (_controller.platform as AndroidWebViewController).setMediaPlaybackRequiresUserGesture(false);
+    }
+    WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
+      _controller.loadHtmlString(html);
+      if (widget.reloadAfterInit) {
+        new Future.delayed(const Duration(milliseconds: 100), () {
+          _controller.reload();
+        });
+      }
+    });
   }
 
   void init() async {
     final extensionsStr = this.widget.extensions.length > 0
-        ? this
-            .widget
-            .extensions
-            .reduce((value, element) => value + '\n' + element)
+        ? this.widget.extensions.reduce((value, element) => value + '\n' + element)
         : '';
-    final themeStr =
-        this.widget.theme != null ? '\'${this.widget.theme}\'' : 'null';
-    await _controller?.runJavascript('''
+    final themeStr = this.widget.theme != null ? '\'${this.widget.theme}\'' : 'null';
+    await _controller.runJavaScript('''
       $echartsScript
       $extensionsStr
       var chart = echarts.init(document.getElementById('chart'), $themeStr);
@@ -89,14 +154,13 @@ class _EchartsState extends State<Echarts> {
       chart.setOption($_currentOption, true);
     ''');
     if (widget.onLoad != null) {
-      widget.onLoad!(_controller!);
+      widget.onLoad!(_controller);
     }
   }
 
-  Set<Factory<OneSequenceGestureRecognizer>> getGestureRecognizers() {
+  Set<Factory<OneSequenceGestureRecognizer>> get getGestureRecognizers {
     Set<Factory<OneSequenceGestureRecognizer>> set = Set();
-    if (this.widget.captureAllGestures ||
-        this.widget.captureHorizontalGestures) {
+    if (this.widget.captureAllGestures || this.widget.captureHorizontalGestures) {
       set.add(Factory<HorizontalDragGestureRecognizer>(() {
         return HorizontalDragGestureRecognizer()
           ..onStart = (DragStartDetails details) {}
@@ -122,7 +186,7 @@ class _EchartsState extends State<Echarts> {
   void update(String preOption) async {
     _currentOption = widget.option;
     if (_currentOption != preOption) {
-      await _controller?.runJavascript('''
+      await _controller.runJavaScript('''
         try {
           chart.setOption($_currentOption, true);
         } catch(e) {
@@ -139,36 +203,15 @@ class _EchartsState extends State<Echarts> {
 
   @override
   void dispose() {
-    _controller?.clearCache();
+    _controller.clearCache();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return WebView(
-        backgroundColor: Color(0x00000000),
-        initialUrl: htmlBase64,
-        javascriptMode: JavascriptMode.unrestricted,
-        onWebViewCreated: (WebViewController webViewController) {
-          _controller = webViewController;
-        },
-        onPageFinished: (String url) {
-          init();
-        },
-        onWebResourceError: (e) {
-          if (widget.onWebResourceError != null) {
-            widget.onWebResourceError!(_controller!, Exception(e));
-          }
-        },
-        javascriptChannels: <JavascriptChannel>[
-          JavascriptChannel(
-              name: 'Messager',
-              onMessageReceived: (JavascriptMessage javascriptMessage) {
-                if (widget.onMessage != null) {
-                  widget.onMessage!(javascriptMessage.message);
-                }
-              }),
-        ].toSet(),
-        gestureRecognizers: getGestureRecognizers());
+    return WebViewWidget(
+      controller: _controller,
+      gestureRecognizers: getGestureRecognizers,
+    );
   }
 }

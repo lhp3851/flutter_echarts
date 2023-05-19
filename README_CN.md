@@ -1,4 +1,4 @@
-[English](https://github.com/entronad/flutter_echarts/blob/master/README.md) 
+[English](https://github.com/entronad/flutter_echarts/blob/master/README.md)
 
 <p align="center">
 <img src="https://raw.githubusercontent.com/entronad/flutter_echarts/master/doc/logo.png" />
@@ -10,15 +10,11 @@
 </a>
 </p>
 
-*反应式 [Apache ECharts](https://github.com/apache/incubator-echarts) Flutter 组件。* 
-
-
+*反应式 [Apache ECharts](https://github.com/apache/incubator-echarts) Flutter 组件。*
 
 **注意：**
 
 *由于本库基于 webview，因此存在一些固有的不稳定和性能问题。我们推荐 Flutter 图表库 [Graphic](https://github.com/entronad/graphic) 作为替代。*
-
-
 
 # 特点
 
@@ -152,7 +148,7 @@ image: 'data:image/png;base64,iVBORw0KG...',
 extraScript: '''
   chart.on('click', (params) => {
     if(params.componentType === 'series') {
-  	  Messager.postMessage('anything');
+     Messager.postMessage('anything');
     }
   });
 ''',
@@ -232,11 +228,9 @@ const liquidPlugin = r'''
 
 # 博客
 
-[响应式 Echarts Flutter 组件](https://zhuanlan.zhihu.com/p/99034738) 
+[响应式 Echarts Flutter 组件](https://zhuanlan.zhihu.com/p/99034738)
 
-[一次 Flutter WebView 性能优化](https://zhuanlan.zhihu.com/p/103012116) 
-
-
+[一次 Flutter WebView 性能优化](https://zhuanlan.zhihu.com/p/103012116)
 
 ---
 

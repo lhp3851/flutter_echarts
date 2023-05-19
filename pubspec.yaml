@@ -9,7 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-  webview_flutter: ^3.0.4
+  url_launcher: ^6.1.11
+  webview_flutter: ^4.2.0
+  webview_flutter_android: ^3.7.0
+  webview_flutter_wkwebview: ^3.4.3
 
 dev_dependencies:
   flutter_test:

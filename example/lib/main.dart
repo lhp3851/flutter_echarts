@@ -12,36 +12,41 @@ import 'dark_theme_script.dart' show darkThemeScript;
 
 // final display = createDisplay(decimal: 2);
 
-void main() => runApp(MyApp());
+void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const MyApp());
+}
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: MyHomePage(),
+      home: const MyHomePage(),
     );
   }
 }
 
 class MyHomePage extends StatefulWidget {
-  MyHomePage({Key? key}) : super(key: key);
+  const MyHomePage({Key? key}) : super(key: key);
 
   @override
   _MyHomePageState createState() => _MyHomePageState();
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  final GlobalKey<ScaffoldState> _scaffoldKey = new GlobalKey<ScaffoldState>();
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   List<Map<String, Object>> _data1 = [
     {'name': 'Please wait', 'value': 0}
   ];
 
   getData1() async {
-    await Future.delayed(Duration(seconds: 4));
+    await Future.delayed(const Duration(seconds: 4));
 
     const dataObj = [
       {
@@ -74,8 +79,8 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     ];
 
-    this.setState(() {
-      this._data1 = dataObj;
+    setState(() {
+      _data1 = dataObj;
     });
   }
 
@@ -83,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void initState() {
     super.initState();
 
-    this.getData1();
+    getData1();
   }
 
   @override
@@ -91,20 +96,21 @@ class _MyHomePageState extends State<MyHomePage> {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        title: Text('Echarts Demon'),
+        title: const Text('Echarts Demon'),
       ),
       body: SingleChildScrollView(
         child: Center(
           child: Column(
             children: <Widget>[
-              Padding(
-                child: Text('Reactive updating and tap event',
-                    style: TextStyle(fontSize: 20)),
+              const Padding(
                 padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
+                child: Text('Reactive updating and tap event', style: TextStyle(fontSize: 20)),
               ),
-              Text('- data will be fetched in a few seconds'),
-              Text('- tap the bar and trigger the snack'),
-              Container(
+              const Text('- data will be fetched in a few seconds'),
+              const Text('- tap the bar and trigger the snack'),
+              SizedBox(
+                width: 300,
+                height: 250,
                 child: Echarts(
                   option: '''
                     {
@@ -228,19 +234,25 @@ class _MyHomePageState extends State<MyHomePage> {
                     //     ));
                     // }
                   },
+                  progressHandler: (progress) {
+                    debugPrint("⏳1: $progress");
+                  },
+                  onLoad: (webController) {
+                    // webController.loadHtmlString(html)
+                    debugPrint("webvewController: $webController");
+                  },
                 ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
+                child: Text('Using WebGL for 3D charts', style: TextStyle(fontSize: 20)),
+              ),
+              const Text('- chart capture all gestures'),
+              SizedBox(
                 width: 300,
                 height: 250,
-              ),
-              Padding(
-                child: Text('Using WebGL for 3D charts',
-                    style: TextStyle(fontSize: 20)),
-                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
-              ),
-              Text('- chart capture all gestures'),
-              Container(
                 child: Echarts(
-                  extensions: [glScript],
+                  extensions: const [glScript],
                   captureAllGestures: true,
                   option: '''
                     {
@@ -307,17 +319,20 @@ class _MyHomePageState extends State<MyHomePage> {
     }]
                     }
                   ''',
+                  progressHandler: (progress) {
+                    debugPrint("⏳2: $progress");
+                  },
                 ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
+                child: Text('Dark Theme', style: TextStyle(fontSize: 20)),
+              ),
+              SizedBox(
                 width: 300,
                 height: 250,
-              ),
-              Padding(
-                child: Text('Dark Theme', style: TextStyle(fontSize: 20)),
-                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
-              ),
-              Container(
                 child: Echarts(
-                  extensions: [darkThemeScript],
+                  extensions: const [darkThemeScript],
                   theme: 'dark',
                   option: '''
                     {
@@ -371,16 +386,19 @@ class _MyHomePageState extends State<MyHomePage> {
                       ]
                     }
                   ''',
+                  progressHandler: (progress) {
+                    debugPrint("⏳3: $progress");
+                  },
                 ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
+                child: Text('Data zoom', style: TextStyle(fontSize: 20)),
+              ),
+              const Text('- chart capture all gestures'),
+              SizedBox(
                 width: 300,
                 height: 250,
-              ),
-              Padding(
-                child: Text('Data zoom', style: TextStyle(fontSize: 20)),
-                padding: EdgeInsets.fromLTRB(0, 40, 0, 20),
-              ),
-              Text('- chart capture all gestures'),
-              Container(
                 child: Echarts(
                   captureAllGestures: true,
                   extraScript: '''
@@ -463,17 +481,20 @@ class _MyHomePageState extends State<MyHomePage> {
                       ]
                     }
                   ''',
+                  progressHandler: (progress) {
+                    debugPrint("⏳4: $progress");
+                  },
                 ),
+              ),
+              const Padding(
+                padding: EdgeInsets.fromLTRB(0, 40, 0, 0),
+                child: Text('Using extension', style: TextStyle(fontSize: 20)),
+              ),
+              SizedBox(
                 width: 300,
                 height: 250,
-              ),
-              Padding(
-                child: Text('Using extension', style: TextStyle(fontSize: 20)),
-                padding: EdgeInsets.fromLTRB(0, 40, 0, 0),
-              ),
-              Container(
                 child: Echarts(
-                  extensions: [liquidScript],
+                  extensions: const [liquidScript],
                   option: '''
                     {
                       series: [{
@@ -482,9 +503,10 @@ class _MyHomePageState extends State<MyHomePage> {
                       }]
                     }
                   ''',
+                  progressHandler: (progress) {
+                    debugPrint("⏳5: $progress");
+                  },
                 ),
-                width: 300,
-                height: 250,
               ),
             ],
           ),
